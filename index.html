@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ACCESS DENIED — SITE UNDER CONSTRUCTION</title>
+<meta name="description" content="System offline. Deployment pending.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAOUlEQVR4nGNgGAWjYBSMAjTw//9/Bkbi1DIyMjAxMTBQDEYNGDVg1IBRA0YNGDVg1IBRA0YNoBwAAJ2KAxFkRkSRAAAAAElFTkSuQmCC">
+<style>
+:root{
+  --bg:#0a0a0a;
+  --fg:#00ff41;
+  --fg-dim:#008f11;
+  --alert:#ff0000;
+  --panel:#1a1a1a;
+  --cursor:#00ff41;
+  --hl:rgba(0,255,65,0.08);
+  --fade:#003b00;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  height:100%;
+  background:var(--bg);
+  color:var(--fg);
+  font-family:"Courier New",Courier,monospace;
+  font-size:14px;
+  line-height:1.6;
+  overflow-x:hidden;
+}
+body{
+  position:relative;
+  min-height:100vh;
+  padding:24px 16px 48px;
+  border-radius:24px;
+  box-shadow:
+    inset 0 0 120px rgba(0,255,65,0.08),
+    inset 0 0 40px rgba(0,0,0,0.9),
+    0 0 60px rgba(0,255,65,0.15);
+}
+/* MATRIX CANVAS */
+#matrix{
+  position:fixed;inset:0;
+  width:100vw;height:100vh;
+  z-index:0;opacity:0.18;
+  pointer-events:none;
+}
+/* SCANLINES */
+body::after{
+  content:"";
+  position:fixed;inset:0;
+  background:repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 1px,
+    rgba(0,0,0,0.8) 2px,
+    rgba(0,0,0,0.8) 3px
+  );
+  opacity:0.04;
+  pointer-events:none;
+  z-index:50;
+  mix-blend-mode:multiply;
+}
+/* CRT vignette */
+body::before{
+  content:"";
+  position:fixed;inset:0;
+  border-radius:24px;
+  box-shadow:inset 0 0 200px rgba(0,0,0,0.9);
+  pointer-events:none;
+  z-index:40;
+}
+.wrap{
+  position:relative;
+  z-index:10;
+  max-width:720px;
+  margin:0 auto;
+}
+.glow{
+  text-shadow:0 0 8px var(--fg),0 0 20px var(--fg);
+}
+#boot{
+  white-space:pre-wrap;
+  color:var(--fg);
+  text-shadow:0 0 6px var(--fg);
+}
+.line{display:block}
+.tag-ok{color:var(--fg)}
+.dim{color:var(--fg-dim)}
+.alert{color:var(--alert);text-shadow:0 0 8px var(--alert),0 0 20px var(--alert)}
+
+#main{display:none}
+#main.show{display:block;animation:fadein .3s linear}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+
+pre.banner{
+  color:var(--fg);
+  text-shadow:0 0 8px var(--fg),0 0 20px var(--fg);
+  font-size:14px;
+  line-height:1.1;
+  letter-spacing:0;
+  display:inline-block;
+  transition:transform .12s linear;
+}
+.divider{
+  color:var(--fg-dim);
+  margin:8px 0 18px;
+  letter-spacing:-1px;
+  text-shadow:0 0 4px var(--fg-dim);
+}
+.prompt{
+  color:var(--fg);
+  text-shadow:0 0 6px var(--fg);
+  margin-bottom:8px;
+}
+.prompt .user{color:var(--alert);text-shadow:0 0 6px var(--alert)}
+.prompt .host{color:var(--fg)}
+#message{
+  white-space:pre-wrap;
+  color:var(--fg);
+  text-shadow:0 0 6px var(--fg);
+  min-height:160px;
+}
+#message .ghost{color:var(--fg-dim);text-shadow:0 0 4px var(--fg-dim)}
+#message .hi{color:#aaffaa;text-shadow:0 0 10px var(--fg),0 0 24px var(--fg)}
+
+.cursor{
+  display:inline-block;
+  width:.6em;
+  background:var(--cursor);
+  color:var(--cursor);
+  box-shadow:0 0 8px var(--cursor),0 0 16px var(--cursor);
+  animation:blink 1s steps(1) infinite;
+}
+@keyframes blink{50%{opacity:0}}
+
+.stats{
+  margin:24px 0 18px;
+  color:var(--fg-dim);
+  text-shadow:0 0 4px var(--fg-dim);
+  white-space:pre;
+  overflow:hidden;
+  font-size:12px;
+}
+.stats .v{color:var(--fg);text-shadow:0 0 6px var(--fg)}
+
+.progress-label{color:var(--fg-dim);margin-top:6px;text-shadow:0 0 4px var(--fg-dim)}
+.bar{
+  font-family:"Courier New",monospace;
+  color:var(--fg);
+  text-shadow:0 0 6px var(--fg);
+  letter-spacing:0;
+  margin:4px 0 22px;
+  white-space:nowrap;
+  overflow:hidden;
+}
+.footer-prompt{
+  color:var(--fg);
+  text-shadow:0 0 6px var(--fg);
+  margin-top:16px;
+}
+
+/* Alert mode */
+.alert-mode{
+  animation:redflash .25s linear 1;
+}
+@keyframes redflash{
+  0%{background:#0a0a0a}
+  20%{background:#3a0000}
+  60%{background:#660000}
+  100%{background:#0a0a0a}
+}
+#alertBox{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:60;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  background:rgba(20,0,0,0.85);
+  color:var(--alert);
+  text-shadow:0 0 12px var(--alert),0 0 30px var(--alert);
+  font-size:22px;
+  text-align:center;
+  gap:18px;
+  padding:24px;
+}
+#alertBox.on{display:flex}
+#alertCountdown{font-size:96px;line-height:1}
+
+/* Hex burst */
+.hex{
+  position:fixed;
+  z-index:55;
+  color:var(--fg);
+  text-shadow:0 0 6px var(--fg);
+  font-size:10px;
+  pointer-events:none;
+  white-space:pre;
+  animation:hexfade .8s ease-out forwards;
+  font-family:"Courier New",monospace;
+}
+@keyframes hexfade{
+  0%{opacity:1;transform:translate(-50%,-50%) scale(.9)}
+  100%{opacity:0;transform:translate(-50%,-90%) scale(1.1)}
+}
+
+@media (max-width:600px){
+  html,body{font-size:11px}
+  pre.banner{transform:scale(.6);transform-origin:left top}
+  .stats{display:none}
+  #message{min-height:200px}
+}
+</style>
+</head>
+<body>
+
+<!-- MATRIX RAIN -->
+<canvas id="matrix"></canvas>
+
+<div class="wrap">
+  <!-- BOOT SEQUENCE -->
+  <div id="boot"></div>
+
+  <!-- MAIN CONTENT -->
+  <div id="main">
+    <pre class="banner glow" id="banner"> ██████╗ ██████╗ ███████╗██╗  ██╗
+ ██╔══██╗██╔══██╗██╔════╝╚██╗██╔╝
+ ██████╔╝██████╔╝█████╗   ╚███╔╝ 
+ ██╔═══╝ ██╔══██╗██╔══╝   ██╔██╗ 
+ ██║     ██║  ██║███████╗██╔╝ ██╗
+ ╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝</pre>
+    <div class="divider">════════════════════════════════════</div>
+
+    <div class="prompt"><span class="user">root</span>@<span class="host">darkweb</span>:~# cat /var/www/status.txt</div>
+
+    <div id="message"></div>
+
+    <div class="stats" id="stats">
+┌──────────────────────────────────────────────────────────────┐
+│ CPU: <span class="v" id="s-cpu">94%</span>  │ MEM: <span class="v" id="s-mem">7.8GB/16GB</span>  │ PKT/S: <span class="v" id="s-pkt">48,291</span>  │ ENC: <span class="v">AES-256</span>  │
+└──────────────────────────────────────────────────────────────┘
+    </div>
+
+    <div class="progress-label">[ COMPILING ATTACK SURFACE... ]</div>
+    <div class="bar" id="bar">[░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]</div>
+
+    <div class="footer-prompt"><span style="color:var(--alert);text-shadow:0 0 6px var(--alert)">root</span>@darkweb:~# <span class="cursor">&nbsp;</span></div>
+  </div>
+</div>
+
+<div id="alertBox">
+  <div>[INTRUSION DETECTED] — SYSTEM LOCKDOWN INITIATED</div>
+  <div id="alertCountdown">10</div>
+</div>
+
+<script>
+// ===== MATRIX RAIN =====
+(() => {
+  const canvas = document.getElementById('matrix');
+  const ctx = canvas.getContext('2d');
+  let w, h, cols, drops, fontSize = 16;
+  const chars = 'ァアィイゥウェエォオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    cols = Math.floor(w / fontSize);
+    drops = new Array(cols).fill(0).map(()=> Math.random()*-50);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  let last = 0;
+  function draw(ts){
+    if(ts - last > 55){
+      last = ts;
+      ctx.fillStyle = 'rgba(10,10,10,0.08)';
+      ctx.fillRect(0,0,w,h);
+      ctx.font = fontSize + 'px "Courier New", monospace';
+      for(let i=0;i<cols;i++){
+        const ch = chars[Math.floor(Math.random()*chars.length)];
+        const x = i*fontSize;
+        const y = drops[i]*fontSize;
+        // trailing fade
+        ctx.fillStyle = '#003b00';
+        ctx.fillText(ch, x, y-fontSize);
+        // bright head
+        ctx.fillStyle = '#00ff41';
+        ctx.shadowColor = '#00ff41';
+        ctx.shadowBlur = 8;
+        ctx.fillText(ch, x, y);
+        ctx.shadowBlur = 0;
+        if(y > h && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+
+// ===== BOOT SEQUENCE =====
+const bootLines = [
+  '[BIOS]  Initializing POST sequence.............. OK',
+  '[BIOS]  Detecting hardware components........... OK',
+  '[KERN]  Loading kernel v5.15.0-LTS.............. OK',
+  '[KERN]  Mounting encrypted filesystem........... OK',
+  '[NET ]  Establishing secure tunnel.............. OK',
+  '[NET ]  Bypassing firewall rules................ OK',
+  '[SYS ]  Deploying ghost process................. OK',
+  '[AUTH]  Verifying credentials................... OK',
+  '[SYS ]  Access granted. Welcome, root.',
+  '>_'
+];
+
+const bootEl = document.getElementById('boot');
+const mainEl = document.getElementById('main');
+
+const rand = (a,b)=> a + Math.random()*(b-a);
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+async function typeLine(target, text, charMin=15, charMax=40){
+  const span = document.createElement('span');
+  span.className = 'line';
+  target.appendChild(span);
+  for(const c of text){
+    span.textContent += c;
+    await sleep(rand(charMin,charMax));
+  }
+  target.appendChild(document.createTextNode('\n'));
+}
+
+async function runBoot(){
+  for(const l of bootLines){
+    await typeLine(bootEl, l, 6, 18);
+    await sleep(rand(300,700));
+  }
+  await sleep(1200);
+  bootEl.style.display = 'none';
+  mainEl.classList.add('show');
+  runMain();
+}
+
+// ===== MAIN MESSAGE =====
+const messageEl = document.getElementById('message');
+
+async function typeInto(el, text, cls='', min=18, max=42){
+  const span = document.createElement('span');
+  if(cls) span.className = cls;
+  el.appendChild(span);
+  for(const c of text){
+    span.textContent += c;
+    await sleep(rand(min,max));
+  }
+  el.appendChild(document.createTextNode('\n'));
+}
+
+async function runMain(){
+  await typeInto(messageEl, '[STATUS]: Covert operations in progress.','',12,28);
+  await sleep(250);
+  await typeInto(messageEl, '[TARGET]: Full deployment imminent.','',12,28);
+  await sleep(250);
+  await typeInto(messageEl, '[ETA   ]: Undisclosed. Watch the grid.','',12,28);
+  await sleep(450);
+  messageEl.appendChild(document.createTextNode('\n'));
+  await typeInto(messageEl, '>> Our full site is coming very soon.','hi',22,48);
+  await sleep(400);
+  messageEl.appendChild(document.createTextNode('\n'));
+  await typeInto(messageEl, 'Stand by. Maintain radio silence.','ghost',14,30);
+  // trailing cursor
+  const cur = document.createElement('span');
+  cur.className = 'cursor';
+  cur.innerHTML = '&nbsp;';
+  messageEl.appendChild(cur);
+}
+
+runBoot();
+
+// ===== SYSTEM STATS =====
+const sCpu = document.getElementById('s-cpu');
+const sMem = document.getElementById('s-mem');
+const sPkt = document.getElementById('s-pkt');
+function updateStats(){
+  const cpu = Math.floor(rand(78,99));
+  const mem = (rand(5.2,12.8)).toFixed(1);
+  const pkt = Math.floor(rand(20000,99999)).toLocaleString();
+  sCpu.textContent = cpu+'%';
+  sMem.textContent = mem+'GB/16GB';
+  sPkt.textContent = pkt;
+  setTimeout(updateStats, rand(2000,4000));
+}
+setTimeout(updateStats, 2500);
+
+// ===== PROGRESS BAR =====
+const barEl = document.getElementById('bar');
+const BAR_LEN = 30;
+let barT = 0;
+function renderBar(ts){
+  // pulse between 72 and 100 over 3s ease-in-out
+  const t = (ts/3000) % 1;
+  const ease = 0.5 - 0.5*Math.cos(t*Math.PI*2);
+  const pct = 0.72 + ease*0.28;
+  const filled = Math.round(pct*BAR_LEN);
+  let s = '[';
+  for(let i=0;i<BAR_LEN;i++) s += i<filled ? '█' : '░';
+  s += '] ' + Math.round(pct*100) + '%';
+  barEl.textContent = s;
+  requestAnimationFrame(renderBar);
+}
+requestAnimationFrame(renderBar);
+
+// ===== EFFECTS: flicker + banner jitter =====
+function flicker(){
+  document.body.style.transition = 'opacity .08s';
+  document.body.style.opacity = '0.97';
+  setTimeout(()=>{ document.body.style.opacity = '1'; }, 80);
+  setTimeout(flicker, rand(4000,8000));
+}
+setTimeout(flicker, 3000);
+
+function jitter(){
+  const b = document.getElementById('banner');
+  if(b){
+    const dx = (Math.random()<.5?-1:1);
+    b.style.transform = `translateX(${dx}px)`;
+    setTimeout(()=>{ b.style.transform = 'translateX(0)'; }, 120);
+  }
+  setTimeout(jitter, rand(6000,12000));
+}
+setTimeout(jitter, 5000);
+
+// ===== EASTER EGGS =====
+// Konami
+const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+let kBuf = [];
+window.addEventListener('keydown', e => {
+  kBuf.push(e.key.length===1 ? e.key.toLowerCase() : e.key);
+  if(kBuf.length > KONAMI.length) kBuf.shift();
+  if(kBuf.length === KONAMI.length && kBuf.every((k,i)=>k===KONAMI[i])){
+    kBuf = [];
+    triggerAlert();
+  }
+});
+
+const alertBox = document.getElementById('alertBox');
+const alertCountdown = document.getElementById('alertCountdown');
+async function triggerAlert(){
+  document.body.classList.add('alert-mode');
+  setTimeout(()=>document.body.classList.remove('alert-mode'), 260);
+  alertBox.classList.add('on');
+  for(let n=10;n>=0;n--){
+    alertCountdown.textContent = n;
+    await sleep(700);
+  }
+  alertBox.classList.remove('on');
+}
+
+// Click hex burst
+const HEX = '0123456789ABCDEF';
+function randHex(n){
+  let s='';
+  for(let i=0;i<n;i++){
+    if(i>0 && i%2===0) s += ' ';
+    s += HEX[Math.floor(Math.random()*16)];
+  }
+  return s;
+}
+window.addEventListener('click', e => {
+  const el = document.createElement('div');
+  el.className = 'hex';
+  el.style.left = e.clientX + 'px';
+  el.style.top = e.clientY + 'px';
+  const lines = [];
+  for(let i=0;i<4;i++) lines.push(randHex(16));
+  el.textContent = lines.join('\n');
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 850);
+});
+</script>
+</body>
+</html>
